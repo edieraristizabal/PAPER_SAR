@@ -1,0 +1,479 @@
+\documentclass[
+  manuscript=article,  
+  layout=preprint,  
+  year=2023,
+  volume=0,
+]{format}
+
+\doi{xxxx}
+
+\received {}
+\revised  {}
+\accepted {}
+\published{}
+\editor{}
+\reviewers{}
+
+% --- blew is the area for authors ---
+
+\usepackage[english]{babel}
+
+% specify the .bib file for references
+\addbibresource{reference.bib} 
+
+% Make sure your article tile is within 12 words
+\title{Spatial regression models for landslide susceptibility}
+
+\author{Edier Aristizábal}
+\affiliation{Departamento de Geociencias y Medio Ambiente, Universidad Nacional de Colombia, Medellín, Colombia}
+\alsoaffiliation{Institute of Environmental Science and Geography, University of Potsdam, Germany}
+\email{evaristizabalg@unal.edu.co}
+
+\author{Oliver Korup}
+\affiliation{Institute of Environmental Science and Geography, University of Potsdam, Germany}
+
+% maximum five keywords
+\keywords{landslide; susceptibility; spatial dependency; spatial heterogeneity} 
+
+\begin{document}
+
+\begin{abstract}
+Landslide susceptibility assessment plays a crucial role in understanding landslide spatial likelihood, particularly in mountainous regions such as the Colombian Andes.  Landslide susceptibility data include significant spatial effects in terms of spatial heterogeneity and dependency, which limit standard statistical models for landslide susceptibility analysis. Traditional regression models offer low explanatory power and inadequate consideration of spatial structure. In this study, we estimated landslide susceptibility in the Western and Central Cordilleras of the Colombian Andean mountain range, comprising 533 catchments. Moran scatter plot and Lagrange Multiplier tests highlight both clustering and spatial autocorrelation in the data. Hence, we used spatial regression techniques: Geographically Weighted Regression (GWR), Spatial Regimes (SRs), and Simutaneous Autoregressive models. These models allow for spatially varying coefficients based on discrete spatial subsets and account for autocorrelation. The identification of homogeneous spatial regions using spatial clustering techniques reveals distinct patterns of landslide susceptibility across different geographic areas. Our results suggests that models incorporating spatial heterogeneity and dependency improve performance compared to traditional non-spatial regression models. This study highlights the importance of considering spatial structure in landslide susceptibility analysis and demonstrates the effectiveness of spatial regression models in capturing and modeling complex spatial relationships.
+\end{abstract}
+
+\section{Introduction}
+\par Landslide susceptibility is a spatial model that explicitly represents the relative likelihood that a landslide occurs in a particular region (\cite{brabb1984innovative, corominas2014recommendations, fell2008guidelines}). The assessment of landslide susceptibility involves the observation of predictor variables, that denote the spatial location where landsliding occurred, to obtain landslide pattern mechanism (\cite{reichenbach2018, soeters1996, montgomery1994}). Generally, those observations are assumed to be mutually independent and the influence of the predictor variables is considered spatially homogeneous (\cite{xiao2021reducing}).
+
+\par However, spatial models consider two important spatial effects in data, i.e. heterogeneity and dependence (autocorrelation) \cite{anselin1988spatial}. spatial dependence implies that observations in one region are correlated on those in neighboring regions (\cite{fletcher2018spatial}). Spatial dependence is frequently measured by the covariance and thus is a second-order property (\cite{wickham2008applied}). In the other hand, Spatial heterogeneity refers to the effects of space over the sample units in which the mean varies from place to place (\cite{zhang2023mapping}). Hence, spatial heterogeneity is a first-order property  (\cite{wang2022statistics}).
+
+\par The input data used for landslide susceptibility often encompass both spatial heterogeneity and spatial dependency (\cite{quevedo2022consideration, lombardo2020space}), thus violating basic assumptions of statistical models that ignore spatial effects (\cite{cressie2015statistics, ripley1988statistical, anselin1988spatial}). This oversight leads to spatial structure in the residuals of these models (\cite{rey2023geographic}). Ignoring heterogeneity can have significant consequences for the statistical validity of model estimates, including biased parameter estimates, misleading significance levels, and poor forecasts (\cite{li2022consequences}). The impact of spatial dependence in the significance tests and measures of fit may be misleading due to the biased estimation of error variance, significance levels of $T$-tests, and $R^2$-values (\cite{anselin1990spatial}).
+
+\par Incorporating the spatial component to susceptibility models does not always require additional changes to popular models such as OLS. Spatial heterogeneity can be incorporated using the spatial location as categorical variable and eliminating the intercept of the regression model (\cite{rey2023geographic}). In that way, each areal unit that composed the categorical variable obtains a weight value.  For expressing spatial dependency, one can add further predictors that are spatially lagged (\cite{rey2023geographic}). However, including this spatial lag in the error term or in the dependent variable violates the exogeneity assumption (\cite{anselin1988spatial}).
+
+\par Spatial modeling techniques have gained popularity for addressing dependency and heterogeneity in geodata (\cite{fotheringham2000quantitative, schabenberger2001contemporary}). Among the two main approaches, one is to treat data as if they were obtained from a continuous field using the covariance function or semivariogram with Gaussian models (\cite{rue2005gaussian}). The second approach is to consider data as a discrete space using a covariance function from Markov Random Fields or neighborhood connectivity matrices (\textbf{W}) with regression models (\cite{anselin1996simple}).
+
+\par When landslide susceptibility is carrying out for irregular mapping units, such as catchments, slope units, or administrative boundaries there is an advantages in using discrete models, because they are easier to interpret and require much less computational resource for its implementation, the covariance function for each observation is integrated for the neighbors, instead of the entire number of observations. Moreover, they include the spatial structure without ignoring the discrete index nature of areal data (\cite{fischer2011spatial, fotheringham2000quantitative}).
+
+\par There are two fundamentally different ways to model the spatial structure in discrete data: Conditional Autoregressive models (CAR) with Markov Random Fields or Simultaneous Autoregressive models (SAR) with neighborhood connectivity matrixes (\textbf{W}).  These models introduce spatial dependence in their covariance structure as a function of a \textbf{W}. Hence, these models are conditional on the definition of neighbors and neighborhood weights (\cite{anselin1996simple}). Weight matrices can be obtained via several procedures such as \textit{p}-order binary contiguity matrices that may consider \textit{p}-order neighbors, where \textit{p} is a positive integer that represent the first (n=1), second (n=2) and p=n level of neighborhoods, inverse distance matrices or exponential distance decay matrices, and \textit{q}-nearest neighbor matrices, where \textit{q} is a positive integer that represent the number of neighbors considered (\cite{getis2009spatial, stakhovych2009specification}).
+
+\par SAR and CAR models incorporate discrete neighbor information \cite{wall2004close, jaya2021spatial}. The key distinction between SAR and CAR models is their specification (\cite{cressie2015statistics}). SAR models explain the relations among response variables at all locations on the areal data simultaneously (\cite{ver2018spatial,jaya2021spatial}). In contrast, CAR models specify the distribution of a response variable at a given location by conditioning on the values of its neighbors (\cite{anselin1988spatial}). The CAR is appropriate for situations on first order dependency or relatively local spatial autocorrelation, whereas the SAR is more suitable where there is second order dependency or a more global spatial autocorrelation. SAR models have been used in fields such as quantitative geography, regional science, and economics (\cite{math9111276}) under the term of spatial econometrics (\cite{anselin1988spatial, arbia2016spatial}).
+
+\par Despite these known spatial effects, it is a widespread practice to disregard spatial patterns when it comes to estimating landslide susceptibility. One reason is because spatial statistic and techniques that permit to incorporate spatial effect in analysis are relatively new. However, they have already been used in fields such as ecology and disease mapping. But they have no been applied on landslide susceptibility studies. In this study, we evaluate the spatial effect on landslide susceptibility analysis. We estimate the spatial heterogeneity and dependency in our data, and use spatial statistic techniques for discrete data. We model the number of landslides expected in a catchment (landslide density) using spatial regression models as a function of rainfall, morphometric parameters, geology, and land cover. We hypothesized that integrating spatial heterogeneity and dependency into the analysis, we can better identify landslide-prone areas.
+
+\section{Methodology}
+
+\subsection{Spatial model tests}
+\par A fundamental initial step in implementing spatial models is to evaluate the possible presence of spatial structure in the data. Two common tests for detecting spatial effects are the Moran scatter plot and the Lagrange Multiplier test \cite{anselin1996simple}.
+
+\par The Moran scatter plot shows the relationship between each observation and the average of its surroundings, and is useful for identifying local clusters and spatial outliers (\cite{anselin1988spatial}). The Moran scatter plot provides a classification of spatial association into four categories, corresponding to the location of the points in the four quadrants of the plot. These categories are referred to as High-High, Low-Low, Low-High, and High-Low, relative to the mean, which is the center of the graph, known as the Local Indicator of Spatial Autocorrelation (LISA). Moran's \textit{I} (MI) is a widely used spatial statistic and corresponds to the slope of a linear fit to the Moran scatter plot:
+
+\begin{equation} \label{eq:1}
+    MI = n \frac{\sum_{i=1}^n \sum_{j=1}^n w_{ij} (y_i-\bar{y}) (y_j-\bar{y})} {\sum_{i=1}^n \sum_{j=1}^n w_{ij} \sum_{i=1}^n (y_i-\bar{y})^2}
+\end{equation}
+
+where $n$ is the number of observations, $y_i$ is the standardized value of the variable of interest at location $i$, and $W_{ij}$ is the cell corresponding to the $i$-th row and $j_th$ column of a spatial weight matrix. Values of MI range from $-$1 to $+$1; a value of zero indicates no spatial autocorrelation whatsoever, and +1 indicates perfect clustering of similar values, whilst -1 means data dispersion.
+
+\par The Lagrange multiplier test provides a basis for choosing a spatial regression model, and helps assessing the autocorrelation in the values of the dependent variable and in its residuals. The LM tests are based on the comparison of restricted and unrestricted models: the restricted model is a regression model without any spatial terms, while the unrestricted model is an alternative that includes a spatial term. The spatial term can be either a spatially lagged dependent variable to simulate a spatial autoregressive process, or a spatially lagged error term, which implies a spatial error process. The LM test statistic is computed as the difference between the log-likelihoods of the restricted and unrestricted models. The test statistic follows a $\chi^2$-distribution with one degree of freedom under the null hypothesis of no spatial dependence. If the test statistic is larger than the critical value, one rejects the null hypothesis of spatial independence.
+
+To select evaluate and compare different spatial regression models, we implemented the Akaike's Information Criterion (AIC). Among many, the model with the lowest AIC offers the optimal compromise between fit and complexity. The AIC depends on the likelihood (\textit{L}) and the number of parameters (\textit{k}) of the model:
+
+\begin{equation} \label{eq:1}
+    AIC = -2\text{max}(\log L)+2k
+\end{equation}
+
+\subsection{Spatial heterogeneity}
+\par Spatial heterogeneity can be addressed with Geographically Weighted Regression (\cite{fotheringham2000quantitative}), where the model coefficients may vary smoothly over spatial subsets of the data, or with a Spatial Regimes model, whose coefficients vary by discrete subregions of the data (\cite{brunsdon1996geographically}).
+
+\par Geographically weighted regression (GWR) is a local method that captures process variation in its spatial context. GWR learns a separate regression model at each location through a distance-weighting scheme using a kernel function that emphasises closer observations more than those farther away (\cite{fotheringham2000quantitative}). While an inverse-distance function determines the weights, several kernel functions such as Gaussian, exponential, and bi-square, are available. The distance from, or number of, nearest neighbors that the remaining observations have no influence on, is known as the bandwidth (BW) (\cite{brunsdon1996geographically}). The general GWR equation is defined as:
+
+\begin{equation} \label{eq:1}
+    y_iu=\beta_{0i}u+\beta_{1i}ux_{1i}+\beta_{2i}ux_{2i}+...+\beta_{mi}ux_{mi}
+\end{equation}
+
+where the dependent variable $y$ at a location ($u$) is regressed on a set ($m$) of independent variables ($x$) at the same location. $\beta$ describes a relationship around the location ($u$), and it is specific to that location. GWR constructs a separate equation for every spatial unit (i) of the area that is being studied..
+
+\par Spatial Regimes (SRs) consider systematic effects that follow a geographical pattern that affect its behavior (\cite{anselin1996simple}). Instead of comparing covariates across the study area equally, we only derive variation from within each subregion (\cite{piras2023heterogeneous}). In essence, the specification of SRs is equivalent to a different regression for each group. The term regimes indicates that the observations are grouped according to some criteria that relates to space. Two SRs cases have been established. The first case is known as the spatial fixed effect, where each regime has a different intercept. In the second SRs each regime has its own intercept and set of slope coefficients according to the number of covariates.
+
+\subsection{Spatial dependency}
+\par Starting with the Ordinary Least Square (OLS) model, we distinguish three different types of dependency effects among discrete units (observations): (i) endogenous autocorrelation effects among the dependent variable, (ii) exogenous autocorrelation effects among the predictor variables, and (iii) autocorrelation of the error terms. The general model, including all types of autocorrelation effects, has slightly different terms such as General Nesting Spatial (GNS),  SARAR(1,1), or Cliff-Ord spatial model (\cite{lesage2009introduction, kelejian2007relative, cliff1981spatial}):
+
+$$
+y = \textbf{X} \beta  + \textbf{W} \textbf{X} y + \rho \textbf{W} y + \lambda \textbf{W} \mu + \epsilon
+$$
+
+\par Here, the positive $\textit{n}\times\textit{n}$ spatial weight matrix \textbf{W} describes the structure of dependence between observations in a $n\times1$ vector $y$ with entries indexed by \textit{i}; $\beta$ is a $k\times1$ vector of $k$ coefficients associated with exogenous or predictor variables \textbf{X}, $\rho$ is the coefficient of the spatially lagged dependent variable, and $\lambda$ is the coefficient in a spatial autoregressive structure for the error. $\mu$ and $\epsilon$ denote the spatial and local error terms of the model. $\mu$ follows a first-order spatial autoregressive process, and $\epsilon$ is a $N\times1$ vector storing an independently and identically distributed error term with zero mean and variance $\sigma^2$.
+
+\par The Simultaneously Autoregressive model has different specifications (\cite{elhorst2013spatial}): the most common is the spatially-lagged model (SAR), where $\textbf{W}\textbf{X}y=0$ and $\lambda=0$, which only keeps the spatially lagged target variable, $\rho \textbf{W}y$. For $\textbf{W}\textbf{Xy}=0$ and $\rho=0$, the spatial error model (SEM) retains the error terms $\lambda \textbf{W} \mu$, while the spatial lagged X model (SLX) comprises the spatial lags of the predictors, $\textbf{W} \textbf{X} y$. Further variants include the Kelejan-Prucha or spatial autoregressive combined model (SAC) that includes autocorrelation in $y$ and the $\lambda \textbf{W} \mu$; the spatial Durbin model (SDM) combines an autoregressive target variable and spatially lagged covariates ($\rho \textbf{W} y$, $\textbf{W} \textbf{X} y$); and the spatial Durbin error model (SDEM) comprises a spatial error term combined with spatially lagged covariates (\cite{elhorst2022dynamic, anselin2022spatial}; Fig.~\ref{fig:models}).
+
+\begin{figure}[ht!]
+    \centering
+    {\includegraphics[width=1\textwidth]{figures/Diagrama.png}}
+    \caption{Spatially-lagged or Autoregressive models (SAR). By adding terms for spatial autocorrelation in the response variable $\textbf{W} \textbf{X} y$, the local error $\lambda \textbf{W} \mu$, or spatial lag effects $\rho \textbf{W} y$ to an ordinary least squares regression (OLS) we obtain different variants of spatial regression models. Source: modfied from \cite{lesage2009introduction, kelejian2007relative, cliff1981spatial}}
+    \label{fig:models}
+\end{figure}
+
+\section{Study area and data}
+\par Our study area is located north of 5°N and encompasses the Western and Central Cordilleras of the Colombian Andes, which are separated by the Cauca canyon. The area is bound to the west by the Atrato River and to the east by the Magdalena River. The study area covers some 50.000 km$^2$, which we divided into 533 catchments in the Atrato (25\%), the Cauca (50\%) and the Magdalena basin (25\%); approximately 73\% of these catchments drain less than 100 km$^{2}$ each, with a median area of 48 km$^{2}$.
+
+\begin{figure}[ht!]
+    \centering
+   {\includegraphics[width=1\textwidth]{figures/location.png}}
+    \caption{Location of the study area}
+    \label{fig:location}
+\end{figure}
+
+\par We compiled a catalogue of 13,777 shallow and deep-seated landslides that occurred between 1970 and 2023 (Fig.~\ref{fig:location}), and that we detected manually on high-resolution ($<$1~m), true-color optical images in Google Earth™.
+
+\par Initially, we selected nine predictor variables for the study area: hypsometric integral ($H_i$), mean elevation ($E$), mean slope ($S$), mean local relief ($H$), lineament density ($L_d$), mean annual rainfall ($P$), number of days with accumulated daily rainfall $>$20~mm ($P_\text{20}$), land use cover ($L_c$), and geology ($G$). 
+
+\par We model landslide susceptibility as the number of landslides using as mapping unit the catchments. It means the response variable ($y$) is landslide density. Higher values of landslide density indicate higher susceptibility.
+
+\par The terrain parameters were calculated using the digital elevation model (DEM) from the Advanced Land Observing Satellite-Phased Array-Type L-Band Synthetic Aperture Radar (ALOS-PALSAR) with a pixel resolution of 12.5~m (\cite{logan2014}). 
+
+\par We estimated $L_d$ with the LINE algorithms of the image processing and optimization software CATALYST on the SRTM data (\cite{villalta2002}), based on eight hillshade directions with 45°-bins of azimuth, at a sun elevation of 45°.  
+
+\par The rainfall metrics were calculated using the Climate Hazard Group InfraRed Precipitation with Station Data (CHIRPS) (\cite{funk2015}), version 2.0, to obtain rainfall data at 5-km resolution from 1981 to 2023, using Google Earth Engine (GEE).
+
+\par We created a landcover map from the Copernicus Programme's Sentinel-2 data at 10-m resolution with the GEE tool and the Cloud Score+ S2\_HARMONIZED collection. We selected images from 2018 to 2023 that had $<$10\% cloud, and removed shadow effects. To obtained the landcover map We computed the Normalized Difference Vegetation Index (NDVI)  (\cite{kriegler1969}), the Normalized Difference Built-up Index (NDBI) (\cite{zha2003}), the Modified Normalised Difference Water Index (MNDWI) (\cite{xu2006}) and the Bare Soil Index (BSI) (\cite{li2014}). The landcover classification was based on the random forest algorithms from the Classifier package of GEE (\cite{breiman2001}).
+
+\par To implement the spatial regimes models, it is needed to establish the regions or regimes. The identification of the regimes still remains a subject for investigation. In this study we analyzed two different regimes. The first one correspond to the natural regimes imposed by the main basins, Atrato, Cauca and Magdalena. For the second regime we used Agglomerative Clustering with morphometric parameters and a spatial connectivity matrix using different $K$-nearest neighbors for $K$ = 2, 3, 4, 5, and 6. These data models were built in Python using the Scikit-Learn library with the elbow method and Silhouette coefficient \cite{scikit-learn2011}. The elbow method estimates the optimal number of clusters by plotting the Within-Cluster Sum of Squares (WCSS) as a function of $K$ to identify the break point where the rate of decrease in WCSS changes most \cite{thorndike1953}. The Silhouette coefficient (Sc) measures how similar an object is to its own cluster (cohesion) versus other clusters (separation), and ranges from $-1$ (not clustered) to $+1$ (clustered) (\cite{rousseeuw1987}). 
+
+\par For spatial heterogeneity, we used the library \textit{MGWR} developed by \cite{mgwr2019, oshan2019mgwr} and \textit{PySAL} by \cite{pysal2007} in Python. For spatial dependency we used \textit{spdep} and \textit{spatialreg} developed by \cite{bivand2022}. We used the function \textit{impacts} of the R-package \textit{spatialreg} to estimate direct and indirect impacts of covariates.
+
+\section{Results}
+
+\subsection{Spatial regimes}
+\par To implement spatial regime models, it is necessary to establish spatial regimes or homogeneous regions. Although the study area is naturally divided into the drainage basins of the Atrato, Cauca, and Magdalena rivers, we used spatial clustering on morphometric parameters to identify homogeneous regions in terms of landslide occurrence (Fig.~\ref{fig:LISA}). $H_i$ shows a moderate spatial structure, while slope, elevation, and relief show a high spatial structure with $MI > 0.9$.
+
+\begin{figure}[ht!]
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/all_moran.png}}
+    \caption{Local Indicator of Spatial Autocorrelation (LISA) and the Moran Index for $H_i$, $S$, $Lr$ and $E$. Red color means high values surrounded by high values (hotspot), blue color means low values surrounded by low values (coldspot), gray and yellow color mean high values-low values and low values-high values, respectively. Dark colors indicate statistical significance.}
+    \label{fig:LISA}
+\end{figure}
+
+\par We used spatial agglomerative clustering with different numbers of neighbors. The best result, using the Elbow method and Silhouette index, was obtained using $K=5$ neighbors and four clusters (Fig.~\ref{fig:cluster}). Cluster A corresponds to the low alluvial terrains along the Magdalena and Cauca basins; cluster B represents the high relief terrains along the Cauca canyon; cluster C is the low alluvial terrain along the Atrato basin, and cluster D comprises the high elevation and low relief surfaces in the axis of the central Cordillera.
+
+ \begin{figure}[ht!]
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/clusterKNN5.png}}
+    \caption{Spatial regimes using KNN with k=5}
+    \label{fig:cluster}
+\end{figure}
+
+\subsection{Non-spatial multivariate regression model}
+\par We use several metrics to guide our selection of predictors, including correlation matrices, Principal Component Analysis (PCA), and stepwise selection (forward and backward) elimination using Ordinary Least Squared (OLS) regression (Table~\ref{tab:non-spatial}).
+
+\par $L_c$, $G$ and $L_d$ show coefficients with no statistical significance and low coefficient values. $L_d$ shows high correlation values with $H$ (0.81) and $S$ (0.91), while $H$ and $S$ correlate (0.96). Between the two rainfall covariates, $P$ and $P_{20}$, is a high linear correlation (0.98), and a moderate negative correlation with $E$ (-0.6). Although, $H_i$ shows low correlation values, the coefficients were very low and had no statistical significance. The two main components obtained in the PCA analysis explained 70\% of the total variance. The analysis highlights three groups of collinear predictors: (i) $L_d$, $H$ and $S$, (ii) $H_i$, $E$, and (iii) $P$, $P_{20}$.
+
+\begin{table}[htbp]
+\label{tab:non-spatial}
+\centering
+\caption{Parameter estimates for non-spatial OLS using standardized variables}
+\begin{tabular}{c c c c c c}
+\toprule
+\textbf{Variable} & \textbf{All covs} & \textbf{Variables} & \textbf{Variables} & \textbf{Variables} & \textbf{Selected cov.} \\ 
+\midrule
+$HI$.&\textbf{-0.024}(0.02)&\textbf{0.040}(0.01)&-&-0.010(0.01)&-  \\
+$L_d$&0.065(0.50)&-&-0.025(0.04)&0.043(0.03)&-    \\
+$P_{20}$&\textbf{0.451}(0.107)&\textbf{0.278}(0.11)&\textbf{0.331}(010)&-&\textbf{0.044}(0.02) \\
+$E$&\textbf{0.102}(0.02)&-&-&-&\textbf{0.089}(0.02)   \\
+$S$&-0.141(0.101)&-&\textbf{0.210}(004)&-&\textbf{0.123}(0.02)  \\
+$H$&\textbf{0.240}(0.7)&-&-&\textbf{0.157}(0.02)&-  \\
+$L_c$ (grass)&-&-&-&-&- \\
+$L_c$ (forest)&-0.035(0.03)&0.075(0.04)&-0.051(0.04)&\textbf{-0.081}(0.04)&- \\
+$G$ (volcanic)&-&-&-&-&       \\
+$G$ (granitic)&-0.012(0.03)&\textbf{-0.106}(0.04)&-0.007(0.04)&0.052(0.04)&-  \\
+$G$ (sediments)&0.017(0.07)&\textbf{-0.186}(0.06)&0.028(0.07)&0.063(0.06)&-  \\
+Constant&\textbf{0.277}(0.046)&\textbf{0.283}(0.05)&\textbf{0.283}(0.04)&\textbf{0.264}(0.04)&\textbf{0.248}(0.016) \\
+\midrule
+Adj. R$^{2}$&0.193&0.0501&0.1566&0.1553&0.1582 \\
+AIC&491.698&574.658&512.253&512.124&507.277  \\
+\bottomrule
+\addlinespace[1ex]
+\multicolumn{3}{l}{\textbf{$p<0.05$}, (standard errors)}
+\end{tabular}
+\end{table}
+
+\par The best non-spatial regression model obtained was including $P_{20}$ with terrain parameters:$H$ and $S$. Landslide catchment density tends to be significantly higher if $S$ and $P_{20}$ increase, in higher elevations. This model explains only 16\% of the variance in the landslide density.
+
+\par To evaluate model fit, we examined the residuals (Fig. \ref{fig:residuals}). We split our data up by both basins and clusters and check for spatial structure in our residuals (Fig. \ref{fig:residuals}). We find higher residuals for catchments in the Cauca and Magdalena basins. In terms of clusters, the residuals show higher variances for clusters B and D, where landslides are most abundant.
+
+\begin{figure}[ht!]
+  \begin{minipage}{.48\linewidth}
+    \centering
+      {\includegraphics[width=0.6\textwidth]{figures/knn5_res.png}}
+      {\includegraphics[width=0.6\textwidth]{figures/NOMZH_res.png}}
+  \end{minipage}\quad
+  \begin{minipage}{.48\linewidth}
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/m2u.png}}
+  \end{minipage}
+    \caption{Spatial distribution of residuals and box plots for residuals aggregated by basins and clusters.}
+    \label{fig:residuals}
+\end{figure}
+
+\par The \textit{MI} for the residuals is 0.345 with a $p = 0.001$. The Lagrangue multiplier test for the error term gives a value of $RS_{err}=175$ and for the dependent variable, $RS_{lag}=166$. The Lagrange multiplier shows values statistically significant for both, a higher value is obtained for error term indicating spatial structure in the residuals.
+
+\subsection{Spatial regression models}
+
+\subsubsection{Spatial heterogeneity}
+\par Table \ref{tab:fixed} shows the results for the two spatial fixed effect models (intercept) using as regimes the basins and the clusters. Changes in the intercept reflect different baselines of landslide susceptibility per catchment. The coefficient estimates for basin regimes are very similar, and the coefficients of the predictors have values similar to the non-spatial model, while the coefficients for cluster regimes are significantly different, with higher values for clusters B and D, while coefficients for \textit{H} and \textit{S} are lower. The SRs model for cluster regimes improves adj. $R^2$ to 20\% and reduces AIC indicating better performance. 
+
+\begin{table}[htbp]\centering
+\caption{Spatial fixed effect}
+\label{tab:fixed}
+\begin{tabular}{c c c}
+\toprule
+\textbf{Variable} & \textbf{Basins} & \textbf{Cluster} \\ 
+\midrule
+$P_{20}$&\textbf{0.056}(0.11)&\textbf{0.088}(0.03)\\
+$E$&\textbf{0.090}(0.02)&0.012(0.03)\\
+$S$&\textbf{0.135}(0.02)&\textbf{0.111}(0.03)\\
+Atrato&\textbf{0.182}(0.04)&-\\
+Cauca&\textbf{0.254}(0.04)&-\\
+Magdalena&\textbf{0.276}(0.03)&-\\
+Cluster A&-&\textbf{0.134}(0.03)\\
+Cluster B&-&\textbf{0.350}(0.03)\\
+Cluster C&-&0.027(0.07)\\
+Cluster D&-&\textbf{0.446}(0.06)\\
+\midrule
+Adj. R$^{2}$&0.162&0.201\\
+AIC&506.7036&482.7221\\
+\bottomrule
+\addlinespace[1ex]
+\multicolumn{3}{l}{\textbf{$p<0.05$}}
+\end{tabular}
+\end{table}
+
+\par Table \ref{tab:regimes} shows SRs models with both varying intercepts and slopes for basin regimes and cluster regimes. Changes to the slope terms indicate that the relationship between the independent and dependent variables vary across space. The changes in slope coefficients between regions, both basins and clusters, suggest that the response of the dependent variable to the explanatory variables is heterogeneous. However, SRs for the cluster regimes show much better performance, increasing the adj. $R^2$ to 24\% and reducing AIC to 465.
+
+\begin{table}[htbp]\centering
+\caption{Spatial regimes}
+\label{tab:regimes}
+\begin{tabular}{c c c c}
+\toprule
+\textbf{Basin-Variables} & \textbf{Coeff.} & \textbf{Cluster-Variables} & \textbf{Coeff.} \\ 
+\midrule
+Atrató&\textbf{0.199}(0.05)&Cluster A&\textbf{0.105}(0.05)\\
+Atrato-$P_{20}$&\textbf{0.104}(0.204)&A-Rainfall days&0.081(0.21) \\
+Atrato-$E$&\textbf{0.324}(0.06)&A-mean elevation&0.000(0.07)\\
+Atrató-$S$&0.031(0.05)&A-mean slope&0.083(0.05)\\
+Cauca&\textbf{0.307}(0.05)&Cluster B&\textbf{0.323}(0.04)\\
+Cauca-$P_{20}$&\textbf{0.116}(0.361)&B-Rainfall days&\textbf{0.178}(0.17)\\
+Cauca-$E$&-0.041(0.05)&B-mean elevation&0.073 (0.03)\\
+Cauca-$S$&\textbf{0.196}(0.04)&B-mean slope&\textbf{0.153}(0.04)\\
+Magdalena&\textbf{0.275}(0.03)&Cluster C&0.052 (0.13)\\
+Magdalena-$P_{20}$&0.060(0.16)&C-Rainfall days& -0.008 (0.46)\\
+Magdalena-$E$&\textbf{0.083}(0.03)&C-mean elevation&0.013(0.05)\\
+Magdalena-$S$&\textbf{0.135}(0.03)&C-mean slope&0.004(0.08)\\
+-&-&Cluster D&\textbf{0.680}(0.20)\\
+-&-&D-$P_{20}$&\textbf{-0.292}(0.62) \\
+-&-&D-$E$&\textbf{-0.301}(0.15)        \\
+-&-&D-$S$&\textbf{0.412}(0.12)       \\
+\midrule
+Adj. R$^{2}$&0.197&-&0.238     \\
+AIC&489.693&-&465.591     \\
+\bottomrule
+\addlinespace[1ex]
+\multicolumn{3}{l}{\textbf{$p<0.05$}}
+\end{tabular}
+\end{table}
+
+\par To test for spatial heterogeneity using an smother surface, we used the MWGR model, which offers a smooth surface variation of the predictor coefficients. MGWR gives us a surface of location-specific parameter estimates for each predictor in the model. It also estimates a single bandwidth (BW) parameter that gives us a sense of how big the processes are in terms of space. 
+
+\par Table \ref{tab:mgwr} shows the results for MWGR for four fixed BW and an adaptive bisquare spatial kernel. Values for adj. $R^2$ improve for shorter bandwidths, whereas variance increases due to fewer data to estimate the coefficients. The optimal regression model (adj. $R^2$=55\% and AIC=259) was obtained for Rd with BW=173, H with BW=16, and S with BW=532.
+
+\begin{table}[htbp]\centering
+\caption{Results of the MWGR model changing the bandwidth}
+\label{tab:mgwr}
+\begin{tabular}{c c c c c}
+\toprule
+\textbf{Variable} & \textbf{BW=10} & \textbf{BW=57} & \textbf{BW=200} & \textbf{BW=533} \\ 
+\midrule
+Constant&0.305(1.40)&\textbf{0.196}(0.29)&\textbf{0.252}(0.08)&\textbf{0.255}(0.02)  \\
+$P_{20}$&-0.205(1.01)&0.026(0.28)&\textbf{0.084}(0.16)&\textbf{0.060}(0.03) \\
+$E$&0.071(0.92)&\textbf{0.122}(0.25)&\textbf{0.132}(0.12)&\textbf{0.099}(0.01) \\
+$S$&0.040(0.76)&\textbf{0.129}(0.14)&\textbf{0.143}(0.06)&\textbf{0.137}(0.01) \\
+\midrule
+Adj. R$^{2}$&0.695&0.423&0.312&0.187    \\
+AIC&98.514&366.666&417.786&492.670   \\
+\bottomrule
+\addlinespace[1ex]
+\multicolumn{3}{l}{\textbf{$p<0.05$}}, 
+\end{tabular}
+\end{table}
+
+\par Figure \ref{fig:gwr} shows coefficient spatial variation of H and Rd for BW= 16 and BW=173, respectively. H shows high coefficients for the southwestern area and northeastern, while Rd shows a smoother surface with slightly higher values for the northeastern catchments. This results indicate mean elevation has a heterogeneous influence along the study area, whiles rainfall days changes slightly increasing their importance on hte northeastern.
+
+\begin{figure}[ht!]
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/mgwr_173_16.png}}
+    \caption{Mean elevation for BW=16 and Rainfall days for BW=173}
+    \label{fig:r2}
+\end{figure}
+
+\par Figure \ref{fig:r2} shows local residuals for fixed BW of 16 and 173. Low values of BW mean smaller windows to estimate coefficients, thus roughening the local residual surface; in contrast, a wider BW produces a smoother surface with lower residuals in the central and southeastern catchments. This results confirms that when short BW values are implemented the variance of the model increase considerably.
+
+\begin{figure}[ht!]
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/R2_16_173.png}}
+    \caption{$R^2$ for BW=16 and BW=173}
+    \label{fig:gwr}
+\end{figure}
+
+\subsubsection{Spatial dependency}
+\par To introduce spatial dependence in spatial autoregressive models, a spatial weight matrix and a spatial lag must be established. Taking into account the results of spatial hierarchical clustering, a spatial weight matrix was created using the five nearest neighbor catchments (Fig.~\ref{fig:knn}). 
+
+\begin{figure}[ht!]
+    \centering
+      {\includegraphics[width=0.5\textwidth]{figures/knn5.png}}
+    \caption{Spatial weight structure using 5 nearest neighbors.}
+    \label{fig:knn}
+\end{figure}
+
+Table~\ref{tab:SAR} shows the estimates of the spatial lag models. The spatial lag error coefficient ($\rho$) is around 0.52, while the endogenous variate lag coefficient ($\lambda$)  0.533. When $\rho$ and $\lambda$ are included, for the SAC and GNS models, $\lambda$ increases to 0.76 and $\rho$ turns negative. The lowest AIC is related to spatial autoregressive models that include $\rho$ and $\lambda$ (SAC and GNS). Spatial lag for exogenous covariates tends to have very low coefficients and is not statistically significant.
+
+\begin{table}[htbp]\centering
+\caption{Spatial Autoregressive Models}
+\label{tab:SAR}
+\begin{tabular}{c c c c c c c c}
+\toprule
+\textbf{Variable} & \textbf{SAR} & \textbf{SEM} & \textbf{SLX} & \textbf{SAC} & \textbf{SDM} & \textbf{SDEM} & \textbf{GNS}\\ 
+\midrule
+Cons.&\textbf{0.111}(0.01)&\textbf{0.248}(0.02)&\textbf{0.112}(0.01)&\textbf{0.349}(0.06)&\textbf{0.112}(0.01)&\textbf{0.239}(0.02)&\textbf{0.359}(0.05)  \\
+$P_{20}$&0.027(0.01)&0.043(0.03)&0.006(0.08)&0.033(0.04)&-0.005(0.18)&0.008(0.07)&0.011(0.06) \\
+$E$&\textbf{0.048}(0.02)&\textbf{0.094}(0.03)&0.009(0.05)&\textbf{0.112}(0.04)&0.099(0.05)&0.109(0.05)&.094(0.05) \\
+$S$&\textbf{0.068}(0.01)&\textbf{0.109}(0.02)&\textbf{0.126}(0.04)&\textbf{0.119}(0.03)&\textbf{0.103}(0.05)&\textbf{0.0965}(0.03)&\textbf{0.103}(0.03) \\
+Wx-$P_{20}$&-&-&0.119(0.08)&-&0.033(0.08)&0.040(0.08)&0.050(0.09) \\
+Wx-$E$&-&-&-0.005(0.06)&-&-0.057(0.06)&-0.032(0.07)&0.002(0.07) \\
+Wx-$S$&-&-&-0.001(0.04)&-&-0.044(0.04)&0.040(0.04)&0.121(0.06) \\
+\midrule
+$\rho$&\textbf{0.52533}&-&\textbf{0.5322}&\textbf{-0.48954}&\textbf{0.5322}&-&\textbf{-0.5432} \\
+$\lambda$&-&\textbf{0.534}&-&\textbf{0.7697}&-&\textbf{0.53454}&\textbf{0.78315} \\
+AIC&400.62&398.04&403.67&390.88&402.64&403.39&392.69   \\
+\bottomrule
+\addlinespace[1ex]
+\multicolumn{3}{l}{\textbf{$p<0.05$}}
+\end{tabular}
+\end{table}
+
+\par Finally, we combined spatial dependency and spatial heterogeneity using the spatial lag model SAC, which shows the best results, with the spatial regime model using clusters as regions (Table~\ref{tab:splag}). The combined model does not improve the results of the SAC model. AIC slightly increases, and most slope coefficients are not significant.
+
+\begin{table}[htbp]\centering
+\caption{Spatial Regimes \& Spatial Autoregressive Models}
+\label{tab:splag}
+\begin{tabular}{c c}
+\toprule
+\textbf{Variable} & \textbf{Regimes\&SAC}\\ 
+\midrule
+Cluster A-$E$&-0.021(0.04)\\
+Cluster B-$E$&0.035(0.02)\\
+Cluster C-$E$&-0.002(0.08)\\
+Cluster D-$E$&\textbf{0.160}(0.08)\\
+Cluster A-$S$&0.017(0.03)\\
+Cluster B-$S$&\textbf{0.110}(0.02) \\
+Cluster C-$S$&-0.011(0.05)\\
+Cluster D-$S$&\textbf{0.220}(0.09)\\
+Cluster A-$P_{20}$&0.006(0.20)\\
+Cluster B-$P_{20}$&\textbf{0.067}(0.12)\\
+Cluster C-$P_{20}$&-0.012(0.31)\\
+Cluster D-$P_{20}$&0.012(0.25)\\
+\midrule
+$\rho$&\textbf{0.77717} \\          
+$\lambda$&\textbf{-0.52634} \\
+AIC&387.34   \\
+\bottomrule
+\addlinespace[1ex]
+\multicolumn{1}{l}{\textbf{$p<0.05$}}, 
+\end{tabular}
+\end{table}
+
+\par Figure \ref{tab:results} shows the landslide density using the SAC model and the spatial distribution of residuals. Those residuals have $MI = 0.00045$ with ($p = 0.44$), indicating no spatial structure in this final model.
+
+\begin{figure}[ht!]
+  \begin{minipage}{.48\linewidth}
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/col_fit7.png}}
+  \end{minipage}\quad
+  \begin{minipage}{.48\linewidth}
+    \centering
+      {\includegraphics[width=1\textwidth]{figures/res_col7.png}}
+  \end{minipage}
+    \caption{Modeled landslide density with SAC and residuals}
+    \label{fig:results}
+\end{figure}
+
+\section{Discussion}
+\par Landslide susceptibility analysis is essentially a spatial statistical procedure with the aim of identifying and mapping the likelihood of landslide occurrence in space. We have implemented a landslide susceptibility model in the northern Colombian Andes, using as a terrain unit mapping the catchment. The response variable was defined as the landslide density i.e. the number of landslides normalized by the catchment area. From the entire set of predictor variables, we used the correlation matrix, PCA analysis, and OLS regression to select the best predictor variables: Elevation ($E$), slope ($S$) and Rainfall days ($P_{20}$). However, the best model built shows very low weight values for $P{20}$ and $E$, and the model only represents 15\% of the model variance (\ref{tab:non-spatial}). 
+
+\par This very low performance of the model may be explained due to the spatial structure, both heterogeneity and spatial dependence, observed in the predictor variables that are not considered in the models. In terms of heterogeneity, the MI shows a strong spatial structure of variables as $S$, $H$ and $E$ (Fig. \ref{fig:cluster}). HH and LL variables values tends to be cluster. High values along the Cauca canyon, the northern catchments of the Atrato basin and the southern catchment of the Magdalena basin. whiles low values for the plateaus terrains of the Cauca and Magdalena basin in the central part of the study area, and the low terrains of the Atrato basin and Magdalena basin. This results indicate those terrains should be analysed separately. Landslides that occurred along these areas may occur for different causes. The spatial distribution of residuals, for both clusters and basins, confirm the spatial heterogeneity of the residuals, where the overestimation of the landslide density dominate the cluster B and D that correspond to catchments with high landslide occurrence, mainly located in the Cauca basin. Then, MGWR or regimes models could incorporate this kind of heterogeneity.
+
+In the other way, the Lagrande Multiplier test shows high statistically significant values for spatial dependent in the error term and the dependent variable, slightly higher in the error term, suggesting to implement the spatially-lagged error model (SEM). 
+
+According to Table \ref{tab:regimes}, the clusters of Fig. \ref{fig:cluster} explains better the heterogeneity of the data. Independently of spatial models, this results suggest it is a good practice to identify terrains to similar characteristics to run individual models, or like in this research to implement SR`s models.
+
+\par The use of MWGR using a low BW incorporates higher levels of collinearity, leading to problems such as volatile parameter estimates, counter intuitive parameter signs, overconfident $R^2$ values despite few or no statistically significant parameters, and inflated standard errors (\cite{kyriazos2023dealing}). BW selection is a trade-off between variance and bias. A bandwidth that is too narrow creates larger variance in the parameter estimates and thus likely captures processes that do not represent the local conditions. It means to implement MGWR models it is fundamental to know previously the spatial scale of each variable to define BW. This kind of models incorporate algorithms to optimized the BW and find the best values for BW for each predictor variable. In place of to built a final model, MGWR could help to understand the influence spatial scale of predictor variables.
+
+\par Although, the Lagrange Multiplier test suggest the implementation of SEM models, we implemented all available spatial\-laｇged models. The results confirm the LM test results, where SEM ad SAR model shows low values of AIC. Although SAC and GNS indicate the lowest values of AIC, most authors agree to avoid including the error lag term with the dependent lag term. Our results show, when both terms are included, the error term tends to increase and the sign of the dependent variable changes.
+
+\par In general, it is recommended to use a spatial lag model if there is knowledge about what is causing the spatial autocorrelation in \textit{y}, and an SEM model when there is not any clue about the dependence effect origin. If no theoretical reasons justify a specific model, it might be a better option to rely on the simple SLX specification rather than adopting the more complex SDM in applied research (\cite{halleck2017regional, halleck2015slx}).
+
+\par Setting up spatial autoregressive regression models require both a suitable specification and spatial weight matrix. A key characteristic of a spatial lag model is that the weight at a given location as directly dependent on surrounding observations. This effect is known as spillover, when changes in one area cause changes in another. According to \cite{lesage2014spatial}, there are only two spatial models that need to be considered: the spatial Durbin model (SDM) and the spatial Durbin error model (SDEM). The first model assumes that spillover effects are global. And the second assumes that they are local. In the case of SLX and SDEM the spatial spillover effects can be interpreted as the effect of a unit change in the spatially weighted neighboring observations on the dependent variable. Thus, only direct neighbors, as defined in \textbf{W} – contribute to those local spillover effects. In contrast, spillover effects in SAR, SAC, and SDM models do not only include direct neighbors but also neighbors of neighbors and further higher-order neighbors, globally diffusing the effect (\cite{lesage2011pitfalls}).
+
+\par In this way, spatial autoregressive regression models allows for an interaction effect between neighbours to be specified and measured. However, direct (local spillover) and indirect impacts (global spillover) should be considered carefully (\cite{anselin2022spatial, elhorst2022dynamic}). In spatial models where the dependent variable interacts with the regression coefficients (SAR, SDM, SAC and GNS) a unit change in a predictor impacts the response as the value of the regression coefficient and produces global spillover effects; these impacts should be reported rather than the regression coefficients (\cite{lesage2014spatial, bivand2022}). In the SLX and SDEM models, the local spillover impacts are the consequences for the response of changes in covariates in neighboring observational (\cite{lesage2011pitfalls}). Local impacts may be reported using a linear combination to calculate standard errors for the total impacts of each covariate (sums of coefficients on the covariates (direct) and their spatial lags (indirect)) (\cite{elhorst2013spatial}).
+
+\par Table \ref{tab:impacts} show the impacts for the covariates. $E$ and $S$ shows a similar local positive effect, whilst very low negative global effect. In the other hand, $P{20}$ shows low local and global effects. This results are consistent with the MGWR, which show small values of BW for $S$ and $E$, and higher BW values for $P_{20}$.
+
+\begin{table}[htbp]\centering
+\caption{Direct and indirect impacts of SAC model.}
+\label{tab:impacts}
+\begin{tabular}{c c c c}
+\toprule
+\textbf{covariates} & \textbf{Direct} & \textbf{Indirect} & \textbf{Total}\\ 
+\midrule
+$E$&0.11665610&-0.04091891 &0.07573720\\
+$S$&0.12330372 &-0.04325066 &0.08005306\\
+$P_{20}$&0.03443421 &-0.01207832 &0.02235589\\
+\bottomrule
+\addlinespace[1ex]
+\end{tabular}
+\end{table}
+
+Finally, we combine the SR model using the clusters with the SAC model, in that way it is possible to include the heterogeneity and spatial dependence observed in the data. In this case we selected the SAC model because it shows the best results in terms of AIC. The results of the combined model shows the lowest value of AIC (387), turning out the sign and increasing the values for $\rho$ (0.77) and $\lambda$ (-0.52). Applying the MI, the residual of this model does not show an spatial structure. Our results corroborate that spatial techniques implemented for landslide susceptibility, in this case, discrete mapping unit, the catchment, may improve the development of the models incorporating the spatial structure of the data into the model.
+
+
+\section{Conclusion}
+\par Our study highlights the importance of considering spatial structure in landslide susceptibility analysis and demonstrates the effectiveness of spatial regression models in capturing and modeling spatial relationships. 
+
+\par The assessment of spatial structure revealed significant spatial heterogeneity and dependency in the data, indicating the inadequacy of standard statistical models for landslide susceptibility analysis. The Moran scatter plot and Lagrange Multiplier test detected spatial effects, highlighting the presence of both local clusters and spatial autocorrelation in the data.
+
+\par Traditional regression models provide limited predictions into landslide susceptibility, with low explanatory power. Spatial heterogeneity was addressed through Geographically Weighted Regression (GWR) and Spatial Regimes (SRs) models, allowing for spatially varying coefficients based on discrete spatial subsets. Spatial dependency was incorporated using Simultaneous Autoregressive (SAR) models, accounting for endogenous and exogenous autocorrelation effects among neighboring regions.
+
+\par The identification of homogeneous spatial regions using spatial clustering techniques revealed distinct geographic patterns of landslide susceptibility. Models incorporating spatial heterogeneity and dependency demonstrated improved performance compared to traditional regression models, with higher explanatory power and better fit to the data. The combination of spatial heterogeneity and dependency provided a better understanding of landslide susceptibility, capturing both local variations and regional spatial autocorrelation.
+
+\par In our study case, incorporating spatial structure into landslide susceptibility models was important for more accurate predictions. Future research should continue to explore and refine spatial modeling approaches to further improve our understanding of landslide susceptibility and enhance disaster resilience in mountainous regions.
+
+\begin{acknowledgement}
+We gratefully acknowledge the support of the Alexander von Humboldt Foundation for awarding the first author with a Georg Forster Research Fellowship for Experienced Researchers. This fellowship has been instrumental in facilitating our research endeavors and has provided invaluable opportunities for collaboration and academic growth.
+\end{acknowledgement}
+
+\begin{credit}
+
+  \begin{itemize}
+    \item First Author: 
+    \item Second Author: 
+  \end{itemize}
+\end{credit}
+
+\begin{funding}
+  funding information for this research.
+\end{funding}
+
+\begin{opendata}
+supplementary data
+\end{opendata}
+
+\printbibliography
+
+\end{document}
