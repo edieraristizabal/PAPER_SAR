@@ -1,1 +1,1 @@
-# PAPER_SAR
+Spatial regression models to estimate landslide susceptibility by Edier Aristizabal, Luigi lombardo and Oliver Korup
